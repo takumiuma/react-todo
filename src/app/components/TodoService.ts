@@ -67,6 +67,15 @@ const createTodo = async (newTodo: RequestTodo) => {
   }
 };
 
+// Todoを更新する関数
+const updateTodo = async (todo: Todo) => {
+  try {
+    await axios.put(`${domain}/v1/todos/${todo.id}`, todo);
+  } catch (error) {
+    console.error("Error updating todo:", error);
+  }
+};
+
 // Todoを削除する関数
 const deleteTodo = async (id: number) => {
   try {
@@ -80,4 +89,5 @@ export const useTodoService = () => ({
   fetchTodos,
   createTodo,
   deleteTodo,
+  updateTodo,
 });
