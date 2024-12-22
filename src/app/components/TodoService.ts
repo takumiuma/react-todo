@@ -3,7 +3,7 @@ import axios from "axios";
 const domain = "http://localhost:8080";
 
 interface ResponseTodo {
-  id: { value: number | null };
+  id: { value: number };
   title: { value: string };
   person: { value: string };
   done: { value: boolean };
@@ -17,7 +17,7 @@ interface RequestTodo {
 }
 
 export interface Todo {
-  id: number | null;
+  id: number;
   title: string;
   person: string;
   done: boolean;
@@ -67,7 +67,17 @@ const createTodo = async (newTodo: RequestTodo) => {
   }
 };
 
+// Todoを削除する関数
+const deleteTodo = async (id: number) => {
+  try {
+    await axios.delete(`${domain}/v1/todos/${id}`);
+  } catch (error) {
+    console.error("Error deleting todo:", error);
+  }
+};
+
 export const useTodoService = () => ({
   fetchTodos,
   createTodo,
+  deleteTodo,
 });
