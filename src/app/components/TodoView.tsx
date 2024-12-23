@@ -69,6 +69,14 @@ export default function TodoView() {
     }
   };
 
+  const toggleDone = async (todo: Todo) => {
+    await updateTodo({
+      ...todo,
+      done: !todo.done,
+    });
+    getTodos();
+  };
+
   const removeTodo = async (id: number) => {
     await deleteTodo(id);
     getTodos();
@@ -109,7 +117,16 @@ export default function TodoView() {
             <li key={todo.id} className="flex justify-between p-2 border-b border-gray-300">
               <span className="w-1/4">{todo.title}</span>
               <span className="w-1/4">{todo.person}</span>
-              <span className="w-1/4">{todo.done ? "Done" : "In progress"}</span>
+              <span className="w-1/4">
+                <button
+                  onClick={() => toggleDone(todo)}
+                  className={`px-2 py-1 rounded-md ${
+                    todo.done ? "bg-green-500 text-white" : "bg-gray-300 text-black"
+                  }`}
+                >
+                  {todo.done ? "Done" : "In progress"}
+                </button>
+              </span>
               <div className="w-1/4 flex justify-end space-x-2">
                 <button
                   onClick={() => startEditing(todo)}
@@ -174,7 +191,7 @@ export default function TodoView() {
           onClick={saveTodo}
           className="w-full p-2 bg-green-500 text-white rounded-md hover:bg-green-600"
         >
-          Save
+          保存
         </button>
       </Modal>
     </div>

@@ -2,13 +2,13 @@
 import React from "react";
 
 interface ModalProps {
-  isOpen: boolean;
+  isOpen: boolean; // モーダル表示のリアクティブなpropsを受け取る
   onClose: () => void;
   children: React.ReactNode;
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
+  if (!isOpen) return null; // モーダルおよび子要素は非表示
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
