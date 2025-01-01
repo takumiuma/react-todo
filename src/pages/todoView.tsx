@@ -1,10 +1,10 @@
 "use client"; // クライアントコンポーネントであることを指定
 
 import { useState, useEffect } from "react";
-import { Todo, useTodoService } from "../components/TodoService";
-import Modal from "./Modal";
+import { Todo, useTodoService } from "@/services/TodoService";
+import Modal from "@/components/Modal";
 
-export default function TodoView() {
+export function TodoView() {
   // export default function TodoView({ initialTodos }: TodoViewProps) {
   const { fetchTodos, createTodo, updateTodo, deleteTodo } = useTodoService();
   const [todos, setTodos] = useState<Todo[]>([]);
