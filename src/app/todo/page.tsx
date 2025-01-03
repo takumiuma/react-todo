@@ -1,38 +1,58 @@
 "use client"; // クライアントコンポーネントであることを指定
 
 import { useState, useEffect } from "react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 import { Todo, useTodoService } from "@/services/TodoService";
-import Modal from "@/components/Modal";
+
+const formSchema = z.object({
+  title: z.string().min(1, {
+    message: "Todo must be at least 1 characters.",
+  }),
+  person: z.string().min(1, {
+    message: "User must be at least 1 characters.",
+  }),
+});
 
 export default function Page() {
-  // export default function TodoView({ initialTodos }: TodoViewProps) {
   const { fetchTodos, createTodo, updateTodo, deleteTodo } = useTodoService();
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [newTodo, setNewTodo] = useState<Todo>({
-    id: 0, // リクエスト時には使用しない
-    title: "",
-    person: "",
-    done: false, // リクエスト時には使用しない
-  });
   const [editingTodo, setEditingTodo] = useState<Todo>({
     id: 0,
     title: "",
     person: "",
     done: false,
   });
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const getTodos = async () => {
     setTodos(await fetchTodos());
@@ -44,17 +64,11 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //　空の配列を第2引数に渡すことで初回のみ実行される
 
-  const addTodo = async () => {
+  const addTodo = async (values: { title: string; person: string }) => {
     await createTodo({
       id: undefined,
-      title: newTodo.title,
-      person: newTodo.person,
-      done: false,
-    });
-    setNewTodo({
-      id: 0,
-      title: "",
-      person: "",
+      title: values.title,
+      person: values.person,
       done: false,
     });
     getTodos();
@@ -62,7 +76,6 @@ export default function Page() {
 
   const startEditing = (todo: Todo) => {
     setEditingTodo(todo);
-    setIsModalOpen(true);
   };
 
   const saveTodo = async () => {
@@ -76,7 +89,6 @@ export default function Page() {
         person: "",
         done: false,
       });
-      setIsModalOpen(false);
       getTodos();
     }
   };
@@ -94,21 +106,57 @@ export default function Page() {
     getTodos();
   };
 
+  // 1. Define your form.
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      person: "",
+    },
+  });
+
+  // 2. Define a submit handler.
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Do something with the form values.
+    // ✅ This will be type-safe and validated.
+    await addTodo(values);
+  };
+
   return (
     <div className="p-4">
       <div className="mt-4">
         <h1 className="text-2xl font-bold mb-4">Todo App</h1>
-        <Input
-          value={newTodo.title}
-          onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-          placeholder="New Todo"
-        />
-        <Input
-          value={newTodo.person}
-          onChange={(e) => setNewTodo({ ...newTodo, person: e.target.value })}
-          placeholder="Person"
-        />
-        <Button onClick={addTodo}>登録</Button>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Todo</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="New Todo" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="person"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Person</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Person" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit">register</Button>
+          </form>
+        </Form>
         <Table>
           <TableHeader>
             <TableRow>
@@ -134,22 +182,48 @@ export default function Page() {
                   </Button>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button onClick={() => startEditing(todo)}>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="size-6"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                  <Dialog>
+                    {/* DialogTriggerはDialog内に配置しないとエラーになる */}
+                    <DialogTrigger asChild>
+                      <Button onClick={() => startEditing(todo)}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="size-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                          />
+                        </svg>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Todo</DialogTitle>
+                        <DialogDescription />
+                      </DialogHeader>
+                      <Input
+                        value={editingTodo.title}
+                        onChange={(e) => setEditingTodo({ ...editingTodo, title: e.target.value })}
+                        placeholder="Title"
                       />
-                    </svg>
-                  </Button>
+                      <Input
+                        value={editingTodo.person}
+                        onChange={(e) => setEditingTodo({ ...editingTodo, person: e.target.value })}
+                        placeholder="Person"
+                      />
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button onClick={saveTodo}>Save</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   <Button onClick={() => removeTodo(todo.id)}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -172,20 +246,6 @@ export default function Page() {
           </TableBody>
         </Table>
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h2 className="text-xl font-bold mb-4">Edit Todo</h2>
-        <Input
-          value={editingTodo.title}
-          onChange={(e) => setEditingTodo({ ...editingTodo, title: e.target.value })}
-          placeholder="Title"
-        />
-        <Input
-          value={editingTodo.person}
-          onChange={(e) => setEditingTodo({ ...editingTodo, person: e.target.value })}
-          placeholder="Person"
-        />
-        <Button onClick={saveTodo}>保存</Button>
-      </Modal>
     </div>
   );
 }
