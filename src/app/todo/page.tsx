@@ -135,6 +135,7 @@ export default function Page() {
                 <FormItem>
                   <FormLabel>New Todo</FormLabel>
                   <FormControl>
+                    {/* valueやonChangeを入れるとオーバーライドになって検証する値が取れないっぽい */}
                     <Input {...field} placeholder="New Todo" />
                   </FormControl>
                   <FormMessage />
