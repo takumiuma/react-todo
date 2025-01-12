@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { Todo, useTodoService } from "@/services/TodoService";
 import Modal from "@/components/Modal";
+import { useRouter } from "next/navigation";
 
-export function TodoView() {
+export default function TodoView() {
   // export default function TodoView({ initialTodos }: TodoViewProps) {
+  const router = useRouter();
+
   const { fetchTodos, createTodo, updateTodo, deleteTodo } = useTodoService();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState<Todo>({
@@ -84,7 +87,15 @@ export function TodoView() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Todo App</h1>
+      <div className="flex justify-between mb-4">
+        <span className="text-2xl font-bold">Todo App</span>
+        <button
+          onClick={() => router.push("/todo")}
+          className="p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+        >
+          shadcn/uiで作ったページを開く
+        </button>
+      </div>
       <input
         type="text"
         value={newTodo.title}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +46,8 @@ const formSchema = z.object({
 });
 
 export default function Page() {
+  const router = useRouter();
+
   const { fetchTodos, createTodo, updateTodo, deleteTodo } = useTodoService();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [editingTodo, setEditingTodo] = useState<Todo>({
@@ -125,7 +128,15 @@ export default function Page() {
   return (
     <div className="p-4">
       <div className="mt-4">
-        <h1 className="text-2xl font-bold mb-4">Todo App</h1>
+        <div className="flex justify-between mb-4">
+          <span className="text-2xl font-bold">Todo App</span>
+          <button
+            onClick={() => router.push("/")}
+            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            tailwind cssのみで作ったページを開く
+          </button>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
