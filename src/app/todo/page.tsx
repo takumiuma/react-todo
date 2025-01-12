@@ -33,14 +33,30 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 import { Todo, useTodoService } from "@/services/TodoService";
 
-const formSchema = z.object({
+const formTodoSchema = z.object({
   title: z.string().min(1, {
     message: "Todo must be at least 1 characters.",
   }),
-  person: z.string().min(1, {
+  user: z.string({
+    required_error: "Please select a User.",
+  }),
+});
+
+const formUserSchema = z.object({
+  user: z.string().min(1, {
     message: "User must be at least 1 characters.",
   }),
 });
@@ -67,11 +83,11 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //　空の配列を第2引数に渡すことで初回のみ実行される
 
-  const addTodo = async (values: { title: string; person: string }) => {
+  const addTodo = async (values: { title: string; user: string }) => {
     await createTodo({
       id: undefined,
       title: values.title,
-      person: values.person,
+      person: values.user,
       done: false,
     });
     getTodos();
@@ -109,20 +125,32 @@ export default function Page() {
     getTodos();
   };
 
-  // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const todoForm = useForm<z.infer<typeof formTodoSchema>>({
+    resolver: zodResolver(formTodoSchema),
     defaultValues: {
       title: "",
-      person: "",
+      user: "",
     },
   });
 
-  // 2. Define a submit handler.
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const userForm = useForm<z.infer<typeof formUserSchema>>({
+    resolver: zodResolver(formUserSchema),
+    defaultValues: {
+      user: "",
+    },
+  });
+
+  // submitHandlerの定義
+  const onSubmitTodo = async (values: z.infer<typeof formTodoSchema>) => {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     await addTodo(values);
+  };
+
+  const onSubmitUser = async (values: z.infer<typeof formUserSchema>) => {
+    // Do something with the form values.
+    // ✅ This will be type-safe and validated.
+    console.log(values);
   };
 
   return (
@@ -130,45 +158,118 @@ export default function Page() {
       <div className="mt-4">
         <div className="flex justify-between mb-4">
           <span className="text-2xl font-bold">Todo App</span>
-          <button
-            onClick={() => router.push("/")}
-            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
+          <Button onClick={() => router.push("/")} className="bg-blue-500 hover:bg-blue-600">
             tailwind cssのみで作ったページを開く
-          </button>
+          </Button>
         </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Todo</FormLabel>
-                  <FormControl>
-                    {/* valueやonChangeを入れるとオーバーライドになって検証する値が取れないっぽい */}
-                    <Input {...field} placeholder="New Todo" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="person"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Person</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Person" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit">register</Button>
-          </form>
-        </Form>
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel>
+            <div className="text-xl font-bold pr-4 pb-4">Todo Registration</div>
+            <Form {...todoForm}>
+              <form onSubmit={todoForm.handleSubmit(onSubmitTodo)} className="space-y-8 pr-4">
+                <FormField
+                  control={todoForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Todo</FormLabel>
+                      <FormControl>
+                        {/* valueやonChangeを入れるとオーバーライドになって検証する値が取れないっぽい */}
+                        <Input {...field} placeholder="New Todo" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={todoForm.control}
+                  name="user"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Person</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-[200px] justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? languages.find((language) => language.value === field.value)
+                                    ?.label
+                                : "Select language"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search language..." />
+                            <CommandList>
+                              <CommandEmpty>No language found.</CommandEmpty>
+                              <CommandGroup>
+                                {languages.map((language) => (
+                                  <CommandItem
+                                    value={language.label}
+                                    key={language.value}
+                                    onSelect={() => {
+                                      form.setValue("language", language.value);
+                                    }}
+                                  >
+                                    {language.label}
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        language.value === field.value ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end">
+                  <Button type="submit">register</Button>
+                </div>
+              </form>
+            </Form>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel>
+            {/* 担当者登録 */}
+            <div className="text-xl font-bold pl-4 pb-4">User Registration</div>
+            <Form {...userForm}>
+              <form onSubmit={userForm.handleSubmit(onSubmitUser)} className="space-y-8 pl-4">
+                <FormField
+                  control={userForm.control}
+                  name="user"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Person</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Person" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end">
+                  <Button type="submit">register</Button>
+                </div>
+              </form>
+            </Form>
+          </ResizablePanel>
+        </ResizablePanelGroup>
         <Table>
           <TableHeader>
             <TableRow>
