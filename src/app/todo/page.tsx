@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +47,7 @@ import {
 } from "@/components/ui/command";
 
 import { Todo, useTodoService } from "@/services/TodoService";
+import { User, useUserService } from "@/services/UserService";
 
 const formTodoSchema = z.object({
   title: z.string().min(1, {
@@ -56,8 +59,14 @@ const formTodoSchema = z.object({
 });
 
 const formUserSchema = z.object({
-  user: z.string().min(1, {
+  name: z.string().min(1, {
     message: "User must be at least 1 characters.",
+  }),
+  email: z.string().email({
+    message: "Invalid email address.",
+  }),
+  phoneNumber: z.string().min(1, {
+    message: "Phone number must be at least 1 characters.",
   }),
 });
 
@@ -66,6 +75,8 @@ export default function Page() {
 
   const { fetchTodos, createTodo, updateTodo, deleteTodo } = useTodoService();
   const [todos, setTodos] = useState<Todo[]>([]);
+  const { fetchUsers, registUser } = useUserService();
+  const [users, setUsers] = useState<User[]>([]);
   const [editingTodo, setEditingTodo] = useState<Todo>({
     id: 0,
     title: "",
@@ -77,9 +88,14 @@ export default function Page() {
     setTodos(await fetchTodos());
   };
 
+  const getUsers = async () => {
+    setUsers(await fetchUsers());
+  };
+
   // 初期描画時にTodoリストを取得
   useEffect(() => {
     getTodos();
+    getUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); //　空の配列を第2引数に渡すことで初回のみ実行される
 
@@ -91,6 +107,16 @@ export default function Page() {
       done: false,
     });
     getTodos();
+  };
+
+  const addUser = async (values: { user: string }) => {
+    await registUser({
+      id: undefined,
+      name: values.user,
+      email: "",
+      phoneNumber: "",
+    });
+    getUsers();
   };
 
   const startEditing = (todo: Todo) => {
@@ -129,14 +155,13 @@ export default function Page() {
     resolver: zodResolver(formTodoSchema),
     defaultValues: {
       title: "",
-      user: "",
     },
   });
 
   const userForm = useForm<z.infer<typeof formUserSchema>>({
     resolver: zodResolver(formUserSchema),
     defaultValues: {
-      user: "",
+      name: "",
     },
   });
 
@@ -164,9 +189,9 @@ export default function Page() {
         </div>
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel>
-            <div className="text-xl font-bold pr-4 pb-4">Todo Registration</div>
+            <div className="text-xl font-bold px-4 pb-4">Todo Registration</div>
             <Form {...todoForm}>
-              <form onSubmit={todoForm.handleSubmit(onSubmitTodo)} className="space-y-8 pr-4">
+              <form onSubmit={todoForm.handleSubmit(onSubmitTodo)} className="space-y-8 px-4">
                 <FormField
                   control={todoForm.control}
                   name="title"
@@ -185,8 +210,8 @@ export default function Page() {
                   control={todoForm.control}
                   name="user"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Person</FormLabel>
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Select User</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -199,32 +224,31 @@ export default function Page() {
                               )}
                             >
                               {field.value
-                                ? languages.find((language) => language.value === field.value)
-                                    ?.label
-                                : "Select language"}
+                                ? users.find((user) => user.name === field.value)?.name
+                                : "Select user"}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-[200px] p-0">
                           <Command>
-                            <CommandInput placeholder="Search language..." />
+                            <CommandInput placeholder="Search User..." />
                             <CommandList>
-                              <CommandEmpty>No language found.</CommandEmpty>
+                              <CommandEmpty>No User found.</CommandEmpty>
                               <CommandGroup>
-                                {languages.map((language) => (
+                                {users.map((user) => (
                                   <CommandItem
-                                    value={language.label}
-                                    key={language.value}
+                                    value={user.name}
+                                    key={user.id}
                                     onSelect={() => {
-                                      form.setValue("language", language.value);
+                                      todoForm.setValue("user", user.name);
                                     }}
                                   >
-                                    {language.label}
+                                    {user.name}
                                     <Check
                                       className={cn(
                                         "ml-auto",
-                                        language.value === field.value ? "opacity-100" : "opacity-0"
+                                        user.name === field.name ? "opacity-100" : "opacity-0"
                                       )}
                                     />
                                   </CommandItem>
@@ -247,17 +271,43 @@ export default function Page() {
           <ResizableHandle withHandle />
           <ResizablePanel>
             {/* 担当者登録 */}
-            <div className="text-xl font-bold pl-4 pb-4">User Registration</div>
+            <div className="text-xl font-bold px-4 pb-4">User Registration</div>
             <Form {...userForm}>
-              <form onSubmit={userForm.handleSubmit(onSubmitUser)} className="space-y-8 pl-4">
+              <form onSubmit={userForm.handleSubmit(onSubmitUser)} className="space-y-8 px-4">
                 <FormField
                   control={userForm.control}
-                  name="user"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Person</FormLabel>
+                      <FormLabel>User Name</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Person" />
+                        <Input {...field} placeholder="User Name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={userForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={userForm.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Phone Number" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
