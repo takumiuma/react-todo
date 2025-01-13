@@ -65,8 +65,8 @@ const formUserSchema = z.object({
   email: z.string().email({
     message: "Invalid email address.",
   }),
-  phoneNumber: z.string().min(1, {
-    message: "Phone number must be at least 1 characters.",
+  phoneNumber: z.string().regex(/^\d{10,11}$/, {
+    message: "Phone number must be 10 or 11 digits.",
   }),
 });
 
@@ -109,12 +109,12 @@ export default function Page() {
     getTodos();
   };
 
-  const addUser = async (values: { user: string }) => {
+  const addUser = async (values: { name: string; email: string; phoneNumber: string }) => {
     await registUser({
       id: undefined,
-      name: values.user,
-      email: "",
-      phoneNumber: "",
+      name: values.name,
+      email: values.email,
+      phone_number: values.phoneNumber,
     });
     getUsers();
   };
@@ -147,6 +147,7 @@ export default function Page() {
   };
 
   const removeTodo = async (id: number) => {
+    if (!confirm("本当に削除しますか？")) return;
     await deleteTodo(id);
     getTodos();
   };
@@ -162,6 +163,8 @@ export default function Page() {
     resolver: zodResolver(formUserSchema),
     defaultValues: {
       name: "",
+      email: "",
+      phoneNumber: "",
     },
   });
 
@@ -170,12 +173,12 @@ export default function Page() {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     await addTodo(values);
+    todoForm.reset();
   };
 
   const onSubmitUser = async (values: z.infer<typeof formUserSchema>) => {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+    await addUser(values);
+    userForm.reset();
   };
 
   return (
@@ -338,7 +341,7 @@ export default function Page() {
                   <Button
                     onClick={() => toggleDone(todo)}
                     className={`px-2 py-1 rounded-md ${
-                      todo.done ? "bg-green-500 text-white" : "bg-gray-300 text-black"
+                      todo.done ? "bg-gray-700 text-white" : "bg-gray-500 text-white"
                     }`}
                   >
                     {todo.done ? "Done" : "In progress"}

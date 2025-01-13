@@ -13,14 +13,14 @@ interface RequestUser {
   id: number | undefined;
   name: string;
   email: string;
-  phoneNumber: string;
+  phone_number: string;
 }
 
 export interface User {
   id: number;
   name: string;
   email: string;
-  phone_number: boolean;
+  phoneNumber: boolean;
 }
 
 const fetchUsers = async (): Promise<User[]> => {
